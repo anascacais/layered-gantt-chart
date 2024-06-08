@@ -7,21 +7,21 @@ from datetime import datetime
 import calendar
 
 # local
-from constants import COLOR_PALETTE, YEARLY_QUARTERS_START, YEARLY_QUARTERS_END
+from constants import YEARLY_QUARTERS_START, YEARLY_QUARTERS_END
 
 # ========================== GANTT ========================== #
 
 
 class GanttTimeline():
 
-    def __init__(self, projects_dict, task_name='Project', subtask_name='Task'):
+    def __init__(self, projects_dict, color_palette, task_name='Project', subtask_name='Task'):
         self.task_name = task_name
         self.subtask_name = subtask_name
 
         self.df = self.fill_base_df(projects_dict)
         self.start_date, self.end_date = self.get_start_end_dates()
 
-        self.quarter_color_code = self.get_quarter_color()
+        self.quarter_color_code = self.get_quarter_color(color_palette)
         # self.get_quarter_info()
 
     def fill_base_df(self, projects_dict):
@@ -60,10 +60,10 @@ class GanttTimeline():
 
         return start_date, end_date
 
-    def get_quarter_color(self):
+    def get_quarter_color(self, color_palette):
         quarter_color_code = {}
 
-        cp_iter = iter(COLOR_PALETTE)
+        cp_iter = iter(color_palette)
         self.color_palette = []
         for quarter in self.df['quarter'].unique():
             if quarter != 'None':
@@ -146,7 +146,7 @@ class GanttTimeline():
                     y=(2*y+y_width)/2 + 0.05,
                     yref='paper',
                     showarrow=False,
-                    font=dict(size=14, color="#FFFFFF"),
+                    font=dict(color="#FFFFFF"),
                 )
 
         if months:
@@ -172,7 +172,7 @@ class GanttTimeline():
                     y=(2*y+y_width)/2 + 0.05,
                     yref='paper',
                     showarrow=False,
-                    font=dict(size=14, color="#0A4074"),
+                    font=dict(color="#0A4074"),
                 )
 
         fig.update_yaxes(  # autorange="reversed",
