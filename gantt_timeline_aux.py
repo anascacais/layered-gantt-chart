@@ -122,15 +122,41 @@ class GanttTimeline():
         )
         fig.update_traces(marker=dict(color=self.df['quarter_color']))
 
+        margin = dict(l=50, r=50, b=100, t=100, pad=4)
+        pos, width = get_header_pos(fig, margin)
+
+        if months:
+            month_info = self.get_month_info()
+            for month in month_info.keys():
+                fig.add_shape(
+                    type="rect",
+                    x0=month_info[month]['start'], x1=month_info[month]['end'],
+                    y0=pos, y1=pos+width,
+                    xref='x', yref='paper',
+                    line=dict(color=hex_to_rgba('#F4F4F4', 1)),
+                    fillcolor=hex_to_rgba('#F4F4F4', 1),
+                    opacity=1
+                )
+                fig.add_annotation(
+                    text=month,
+                    x=get_midpoint_date(
+                        max([month_info[month]['start'], self.start_date]),
+                        min([month_info[month]['end'], self.end_date])
+                    ),
+                    y=(pos+width),
+                    yref='paper',
+                    showarrow=False,
+                    font=dict(color="#0A4074"),
+                )
+            pos += width + 0.04
+
         if quarters:
             quarter_info = self.get_quarter_info()
             for quarter in quarter_info.keys():
-                y = 1.2
-                y_width = 0.15
                 fig.add_shape(
                     type="rect",
                     x0=quarter_info[quarter]['start'], x1=quarter_info[quarter]['end'],
-                    y0=y, y1=y+y_width,
+                    y0=pos, y1=pos+width,
                     xref='x', yref='paper',
                     line=dict(color=hex_to_rgba(
                         quarter_info[quarter]['color'], 1)),
@@ -143,44 +169,16 @@ class GanttTimeline():
                     x=get_midpoint_date(
                         max([quarter_info[quarter]['start'], self.start_date]),
                         min([quarter_info[quarter]['end'], self.end_date])),
-                    y=(2*y+y_width)/2 + 0.05,
+                    y=(pos+width),
                     yref='paper',
                     showarrow=False,
                     font=dict(color="#FFFFFF"),
                 )
 
-        if months:
-            month_info = self.get_month_info()
-            for month in month_info.keys():
-                y = 1
-                y_width = 0.15
-                fig.add_shape(
-                    type="rect",
-                    x0=month_info[month]['start'], x1=month_info[month]['end'],
-                    y0=y, y1=y+y_width,
-                    xref='x', yref='paper',
-                    line=dict(color=hex_to_rgba('#F4F4F4', 1)),
-                    fillcolor=hex_to_rgba('#F4F4F4', 1),
-                    opacity=1
-                )
-                fig.add_annotation(
-                    text=month,
-                    x=get_midpoint_date(
-                        max([month_info[month]['start'], self.start_date]),
-                        min([month_info[month]['end'], self.end_date])
-                    ),
-                    y=(2*y+y_width)/2 + 0.05,
-                    yref='paper',
-                    showarrow=False,
-                    font=dict(color="#0A4074"),
-                )
-
-        fig.update_yaxes(  # autorange="reversed",
+        fig.update_yaxes(
             title='', visible=True, showticklabels=True)
         fig.update_xaxes(visible=False, showticklabels=False, range=[
                          self.start_date, self.end_date])
-
-        fig.update_traces(width=0.7)
 
         fig.update_layout(
             yaxis_type='category',
@@ -192,16 +190,19 @@ class GanttTimeline():
             # autosize=False,
             # width=500,
             # height=500,
-            margin=dict(
-                l=50,
-                r=50,
-                b=100,
-                t=100,
-                pad=4
-            ),
+            margin=margin,
         )
 
         return fig
+
+
+def get_header_pos(fig, margin):
+    layout_height = fig.layout.height
+    if not layout_height:
+        layout_height = 450
+    width = ((layout_height - margin['t'] - margin['b']) /
+             len(fig.to_dict()['data'][0]['y'])) / (layout_height * 0.8)
+    return 1.1, width
 
 
 def get_quarter_from_strdate(strdate):
