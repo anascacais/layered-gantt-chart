@@ -19,6 +19,7 @@ class GanttTimeline():
         self.subtask_name = subtask_name
 
         self.df = self.fill_base_df(projects_dict)
+        self.df
         self.start_date, self.end_date = self.get_start_end_dates()
 
         self.quarter_color_code = self.get_quarter_color(color_palette)
@@ -117,6 +118,7 @@ class GanttTimeline():
             self.df,
             x_start='start', x_end='end',
             y='task',
+            custom_data=['description'],
             # color_discrete_sequence=self.color_palette, color='quarter_color',
             category_orders={'task': self.df["task"]}
         )
@@ -179,7 +181,7 @@ class GanttTimeline():
             title='', visible=True, showticklabels=True)
         fig.update_xaxes(visible=False, showticklabels=False, range=[
                          self.start_date, self.end_date])
-
+        fig.update_traces(hovertemplate="%{customdata[0]}",)
         fig.update_layout(
             yaxis_type='category',
             plot_bgcolor='white',
