@@ -29,6 +29,11 @@ class GanttTimeline():
             columns=['task', 'project', 'start', 'end', 'description', 'status'])
 
         for p, project in enumerate(projects_dict):
+
+            # Add empty line to separate projects
+            gantt_df.loc[len(gantt_df)] = [
+                f'{self.task_name} {p+1}'] + [None] * (len(gantt_df.columns)-1)
+
             for t, task in enumerate(projects_dict[project]):
 
                 att = []
@@ -37,10 +42,6 @@ class GanttTimeline():
 
                 gantt_df.loc[len(gantt_df)] = [
                     f'{self.subtask_name} {p+1}.{t+1}', f'{self.task_name} {p+1}'] + att
-
-        # convert str to datetime
-        # gantt_df['start'] = pd.to_datetime(gantt_df['start'])
-        # gantt_df['end'] = pd.to_datetime(gantt_df['end'])
 
         # get yearly quarter
         gantt_df['quarter'] = gantt_df['start'].apply(
@@ -52,8 +53,8 @@ class GanttTimeline():
 
     def get_start_end_dates(self):
         # get start and end of timeline
-        start_date = self.df['start'].min()
-        end_date = self.df['end'].max()
+        start_date = self.df['start'].dropna().min()
+        end_date = self.df['end'].dropna().max()
 
         self.df['first'] = start_date
         self.df['last'] = end_date
@@ -66,12 +67,13 @@ class GanttTimeline():
         quarter_info = {}
 
         for quarter in self.df['quarter'].unique():
-            self.quarter_color_code[quarter] = next(cp_iter)
-            quarter_info[quarter] = {
-                'start': YEARLY_QUARTERS_START[quarter],
-                'end': YEARLY_QUARTERS_END[quarter],
-                'color': self.quarter_color_code[quarter]
-            }
+            if quarter != 'None':
+                self.quarter_color_code[quarter] = next(cp_iter)
+                quarter_info[quarter] = {
+                    'start': YEARLY_QUARTERS_START[quarter],
+                    'end': YEARLY_QUARTERS_END[quarter],
+                    'color': self.quarter_color_code[quarter]
+                }
 
         return quarter_info
 
@@ -81,15 +83,16 @@ class GanttTimeline():
 
         for quarter in self.df['quarter'].unique():
 
-            for month_start_end in get_months(YEARLY_QUARTERS_START[quarter], YEARLY_QUARTERS_END[quarter]):
-                month_name = calendar.month_name[pd.to_datetime(
-                    month_start_end[0]).month]
+            if quarter != 'None':
+                for month_start_end in get_months(YEARLY_QUARTERS_START[quarter], YEARLY_QUARTERS_END[quarter]):
+                    month_name = calendar.month_name[pd.to_datetime(
+                        month_start_end[0]).month]
 
-                month_info[month_name] = {
-                    'start': month_start_end[0],
-                    'end': month_start_end[1],
-                    'color': self.quarter_color_code[quarter]
-                }
+                    month_info[month_name] = {
+                        'start': month_start_end[0],
+                        'end': month_start_end[1],
+                        'color': self.quarter_color_code[quarter]
+                    }
 
         return month_info
 
@@ -99,7 +102,8 @@ class GanttTimeline():
             self.df,
             x_start='start', x_end='end',
             y='task',
-            color_discrete_sequence=COLOR_PALETTE, color='quarter_color'
+            color_discrete_sequence=COLOR_PALETTE, color='quarter_color',
+            category_orders={'task': self.df["task"]}
         )  # .data[0])
 
         if quarters:
@@ -155,14 +159,15 @@ class GanttTimeline():
                     font=dict(size=14, color="#0A4074"),
                 )
 
-        fig.update_yaxes(autorange="reversed",
-                         visible=False, showticklabels=False)
+        fig.update_yaxes(  # autorange="reversed",
+            title='', visible=True, showticklabels=True)
         fig.update_xaxes(visible=False, showticklabels=False, range=[
                          self.start_date, self.end_date])
 
         fig.update_traces(width=0.7)
 
         fig.update_layout(
+            yaxis_type='category',
             plot_bgcolor='white',
             coloraxis_showscale=False,
             showlegend=False,
@@ -182,8 +187,12 @@ class GanttTimeline():
 
 
 def get_quarter_from_strdate(strdate):
-    date = pd.to_datetime(strdate)
-    return ((date.month-1)//3 + 1)
+    try:
+        date = pd.to_datetime(strdate)
+        quarter = ((date.month-1)//3 + 1)
+        return quarter
+    except:
+        return 'None'
 
 
 def get_months(start_date, end_date):
