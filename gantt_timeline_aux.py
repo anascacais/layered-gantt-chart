@@ -7,7 +7,7 @@ from datetime import datetime
 import calendar
 
 # local
-from constants import COLOR_PALETTE, YEARLY_QUARTERS_START, YEARLY_QUARTERS_END, QUARTER_COLOR_CODE
+from constants import COLOR_PALETTE, YEARLY_QUARTERS_START, YEARLY_QUARTERS_END
 
 # ========================== GANTT ========================== #
 
@@ -21,7 +21,8 @@ class GanttTimeline():
         self.df = self.fill_base_df(projects_dict)
         self.start_date, self.end_date = self.get_start_end_dates()
 
-        self.quarter_color_code = {}
+        self.quarter_color_code = self.get_quarter_color()
+        # self.get_quarter_info()
 
     def fill_base_df(self, projects_dict):
 
@@ -46,8 +47,6 @@ class GanttTimeline():
         # get yearly quarter
         gantt_df['quarter'] = gantt_df['start'].apply(
             lambda x: get_quarter_from_strdate(x)).values
-        gantt_df['quarter_color'] = gantt_df['quarter'].apply(
-            lambda x: QUARTER_COLOR_CODE[x]).values
 
         return gantt_df
 
@@ -61,14 +60,30 @@ class GanttTimeline():
 
         return start_date, end_date
 
-    def get_quarter_info(self):
+    def get_quarter_color(self):
+        quarter_color_code = {}
 
         cp_iter = iter(COLOR_PALETTE)
+        self.color_palette = []
+        for quarter in self.df['quarter'].unique():
+            if quarter != 'None':
+                quarter_color_code[quarter] = next(cp_iter)
+                self.color_palette += [quarter_color_code[quarter]]
+            else:
+                quarter_color_code[quarter] = None
+
+        self.df['quarter_color'] = self.df['quarter'].apply(
+            lambda x: quarter_color_code[x]).values
+        # set as categorical to be used for plot category
+        self.df['quarter_color'] = pd.Categorical(self.df['quarter_color'])
+
+        return quarter_color_code
+
+    def get_quarter_info(self):
         quarter_info = {}
 
         for quarter in self.df['quarter'].unique():
             if quarter != 'None':
-                self.quarter_color_code[quarter] = next(cp_iter)
                 quarter_info[quarter] = {
                     'start': YEARLY_QUARTERS_START[quarter],
                     'end': YEARLY_QUARTERS_END[quarter],
@@ -102,9 +117,10 @@ class GanttTimeline():
             self.df,
             x_start='start', x_end='end',
             y='task',
-            color_discrete_sequence=COLOR_PALETTE, color='quarter_color',
+            # color_discrete_sequence=self.color_palette, color='quarter_color',
             category_orders={'task': self.df["task"]}
-        )  # .data[0])
+        )
+        fig.update_traces(marker=dict(color=self.df['quarter_color']))
 
         if quarters:
             quarter_info = self.get_quarter_info()
@@ -171,6 +187,7 @@ class GanttTimeline():
             plot_bgcolor='white',
             coloraxis_showscale=False,
             showlegend=False,
+            barmode='overlay',
             # hovermode=False,
             # autosize=False,
             # width=500,
@@ -183,6 +200,7 @@ class GanttTimeline():
                 pad=4
             ),
         )
+
         return fig
 
 
