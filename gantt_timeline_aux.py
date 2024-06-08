@@ -19,11 +19,10 @@ class GanttTimeline():
         self.subtask_name = subtask_name
 
         self.df = self.fill_base_df(projects_dict)
-        self.df
+        self.df_background = self.df.dropna()
         self.start_date, self.end_date = self.get_start_end_dates()
 
         self.quarter_color_code = self.get_quarter_color(color_palette)
-        # self.get_quarter_info()
 
     def fill_base_df(self, projects_dict):
 
@@ -59,6 +58,9 @@ class GanttTimeline():
         self.df['first'] = start_date
         self.df['last'] = end_date
 
+        self.df_background['first'] = start_date
+        self.df_background['last'] = end_date
+
         return start_date, end_date
 
     def get_quarter_color(self, color_palette):
@@ -73,6 +75,7 @@ class GanttTimeline():
             else:
                 quarter_color_code[quarter] = None
 
+        self.df_background['color'] = '#F4F4F4'
         self.df['quarter_color'] = self.df['quarter'].apply(
             lambda x: quarter_color_code[x]).values
         # set as categorical to be used for plot category
@@ -115,14 +118,20 @@ class GanttTimeline():
     def get_fig_timeline(self, quarters, months):
 
         fig = px.timeline(
+            self.df_background,
+            x_start='first', x_end='last',
+            y='task',
+            category_orders={'task': self.df["task"]}
+        )
+
+        fig.add_trace(px.timeline(
             self.df,
             x_start='start', x_end='end',
             y='task',
             custom_data=['description'],
             # color_discrete_sequence=self.color_palette, color='quarter_color',
             category_orders={'task': self.df["task"]}
-        )
-        fig.update_traces(marker=dict(color=self.df['quarter_color']))
+        ).data[0])
 
         margin = dict(l=50, r=50, b=100, t=100, pad=4)
         pos, width = get_header_pos(fig, margin)
@@ -181,17 +190,16 @@ class GanttTimeline():
             title='', visible=True, showticklabels=True)
         fig.update_xaxes(visible=False, showticklabels=False, range=[
                          self.start_date, self.end_date])
-        fig.update_traces(hovertemplate="%{customdata[0]}",)
+        fig.update_traces(hovertemplate="%{customdata[0]}", marker=dict(
+            color=self.df_background['color']), selector=0)
+        fig.update_traces(marker=dict(
+            color=self.df['quarter_color']), selector=1)
         fig.update_layout(
             yaxis_type='category',
             plot_bgcolor='white',
             coloraxis_showscale=False,
             showlegend=False,
             barmode='overlay',
-            # hovermode=False,
-            # autosize=False,
-            # width=500,
-            # height=500,
             margin=margin,
         )
 
