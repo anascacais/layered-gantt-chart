@@ -118,6 +118,16 @@ class GanttTimeline():
                         quarter_info[quarter]['color'], 1),
                     opacity=1
                 )
+                fig.add_annotation(
+                    text=f'Q{quarter}',
+                    x=get_midpoint_date(
+                        max([quarter_info[quarter]['start'], self.start_date]),
+                        min([quarter_info[quarter]['end'], self.end_date])),
+                    y=(2*y+y_width)/2 + 0.05,
+                    yref='paper',
+                    showarrow=False,
+                    font=dict(size=14, color="#FFFFFF"),
+                )
 
         if months:
             month_info = self.get_month_info()
@@ -136,7 +146,9 @@ class GanttTimeline():
                 fig.add_annotation(
                     text=month,
                     x=get_midpoint_date(
-                        month_info[month]['start'], month_info[month]['end']),
+                        max([month_info[month]['start'], self.start_date]),
+                        min([month_info[month]['end'], self.end_date])
+                    ),
                     y=(2*y+y_width)/2 + 0.05,
                     yref='paper',
                     showarrow=False,
